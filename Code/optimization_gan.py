@@ -11,10 +11,15 @@ from matplotlib import pyplot
 from sklearn.utils import shuffle
 import tensorflow as tf
 from tensorflow.keras.layers import *
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+
+import random
 
 #----------------------------universal-variable-------------------------------------------------------------------------------------------
+# SEED = 42
+# #os.environ['PYTHONHASHSEED'] = str(SEED)
+# random.seed(SEED)
+# np.random.seed(SEED)
+# tf.random.set_seed(SEED)
 IMG_H = 64
 IMG_W = 64
 IMG_C = 3  ## Change this to 1 for grayscale.
@@ -29,10 +34,12 @@ IMAGE_HEIGHT = 64
 IMAGE_WIDTH = 64
 IMAGE_COLOR = 3
 w_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
+images_path = glob(f'/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
+
 
 #----------------------------load-data-------------------------------------------------------------------------------------------
 def load_image(image_path):
-    img = tf.io.read_file(image_path)
+    img = tf.io.read_file(images_path)
     img = tf.io.decode_png(img)
     img = tf.image.resize_with_crop_or_pad(img, IMG_H, IMG_W)
     img = tf.cast(img, tf.float32)
@@ -54,31 +61,31 @@ def tf_dataset(images_path, batch_size):
 # Improvement 2: Replaced sigmoid with Tanh.
 # Improvement 3: Added Dropout and batchnormlization for each layer
 def build_generator(latent_dim):
-    # global IMAGE_HEIGHT, IMAGE_WIDTH
+    # # global IMAGE_HEIGHT, IMAGE_WIDTH
     generator = keras.models.Sequential()
     #
     # f = [2 ** i for i in range(5)][::-1]
     # filters = 32
     # output_strides = 16
-    # h_output = IMAGE_HEIGHT // output_strides
-    # w_output = IMAGE_WIDTH // output_strides
+    # h_output = 64 // output_strides
+    # w_output = 64 // output_strides
     #
     # noise = tf.keras.layers.Input(shape=(latent_dim,), name="gen_noise_input")
 
-    # generator.add(keras.layers.Dense(f[0]*filters * h_output * w_output, use_bias=False)(noise))
+    # generator.add(layers.Dense(f[0]*filters * h_output * w_output, use_bias=False)(noise))
     # generator.add(keras.layers.BatchNormalization())
     # generator.add(keras.layers.ReLU())
-    # generator.add(keras.layers.Reshape(h_output, w_output, f[0] * filters))
+    # generator.add(keras.layers.Reshape(h_output, w_output,  16 * filters))
     # generator.add(keras.layers.Dense(units=IMG_H*IMG_W*IMG_C), use_bias=False, input_shape=[latent_dim]))
     # generator.add(keras.layers.BatchNormalization())
     # #generator.add(keras.layers.LeakyReLU())
     # generator.add(keras.layers.ReLU())
 
-    generator.add(keras.layers.Dense(units=7 * 7 * 256, use_bias=False, input_shape=latent_dim))
+    generator.add(keras.layers.Dense(units=7 * 7 * 256, use_bias=False, input_shape=(latent_dim,)))
     generator.add(keras.layers.BatchNormalization())
-    generator.add(keras.layers.LeakyReLU())
+    generator.add(keras.layers.ReLU())
 
-    generator.add(keras.layers.Reshape(target_shape=[7, 7, 256]))
+    generator.add(keras.layers.Reshape((7, 7, 256)))
 
 
     generator.add(keras.layers.Conv2DTranspose(filters=32, kernel_size=5, strides=1, use_bias=False, padding='same'))
@@ -99,8 +106,8 @@ def build_generator(latent_dim):
     generator.add(keras.layers.ReLU())
     generator.add(keras.layers.Dropout(rate=0.3))
 
-    generator.add(keras.layers.Conv2DTranspose(filters=1, kernel_size=5, strides=2, padding='same'))# activation='tanh'))
-    generator.add(keras.layers.tanh())
+    generator.add(keras.layers.Conv2DTranspose(filters=1, kernel_size=5, strides=2, padding='same',activation='tanh'))
+    #generator.add(keras.tanh())
 
     return generator
 
@@ -110,6 +117,7 @@ def build_generator(latent_dim):
 # Improvement 6. Added Gaussian Noise in the inputs of discriminator.
 def build_discriminator():
     discriminator = keras.models.Sequential()
+
     discriminator.add(keras.layers.GaussianNoise(stddev=0.2))
     discriminator.add(keras.layers.Conv2D(filters=64, kernel_size=5, strides=2, padding='same', use_bias=False,
                                           input_shape=(64, 64, 3)))
@@ -228,7 +236,7 @@ def save_plot(examples, epoch, n):
         pyplot.subplot(n, n, i+1)
         pyplot.axis("off")
         pyplot.imshow(examples[i])  ## pyplot.imshow(np.squeeze(examples[i], axis=-1))
-    filename = f"samples/generated_plot_epoch-{epoch+1}.png"
+    filename = f"/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/sample/opt_generated_plot_epoch-{epoch+1}.png"
     pyplot.savefig(filename)
     pyplot.close()
 
@@ -242,7 +250,7 @@ if __name__ == "__main__":
     batch_size = 128
     latent_dim = 128
     num_epochs = 100
-    images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/')
+    images_path = glob(f'/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
 
     d_model = build_discriminator()
     g_model = build_generator(latent_dim)
@@ -250,8 +258,8 @@ if __name__ == "__main__":
     # d_model.load_weights("saved_model/d_model.h5")
     # g_model.load_weights("saved_model/g_model.h5")
 
-    d_model.summary()
-    g_model.summary()
+    # d_model.summary()
+    # g_model.summary()
 
     gan = GAN(d_model, g_model, latent_dim)
 
@@ -260,18 +268,17 @@ if __name__ == "__main__":
     g_optimizer = tfa.optimizers.Yogi(learning_rate=0.001)
     gan.compile(d_optimizer, g_optimizer, bce_loss_fn)
 
-    images_dataset = tf_dataset(images_path, batch_size)
+    images_dataset = tf_dataset(images_path,batch_size)
 
     for epoch in range(num_epochs):
         gan.fit(images_dataset, epochs=1)
-        g_model.save("saved_model/g_model.h5")
-        d_model.save("saved_model/d_model.h5")
+        # g_model.save("saved_model/g_model.h5")
+        # d_model.save("saved_model/d_model.h5")
 
         n_samples = 25
         noise = np.random.normal(size=(n_samples, latent_dim))
         examples = g_model.predict(noise)
         save_plot(examples, epoch, int(np.sqrt(n_samples)))
-
 #-----------------------train process--------------------------------------------------------
 
 # Training the GAN model.
@@ -318,7 +325,7 @@ if __name__ == "__main__":
 #             generator_loss), end='')
 
 # Saving the model.
-save_model(GAN, generator, discriminator)
+#save_model(GAN, generator, discriminator)
 
 # # Generating digits.
 # digits_to_generate = 25

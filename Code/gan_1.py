@@ -166,7 +166,7 @@ def save_plot(examples, epoch, n):
         pyplot.subplot(n, n, i+1)
         pyplot.axis("off")
         pyplot.imshow(examples[i])  ## pyplot.imshow(np.squeeze(examples[i], axis=-1))
-    filename = f"samples/generated_plot_epoch-{epoch+1}.png"
+    filename = f"/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/sample/generated_plot_epoch-{epoch+1}.png"
     pyplot.savefig(filename)
     pyplot.close()
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     latent_dim = 128
     num_epochs = 1000
     #images_path = glob("data/*")
-    images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/')
+    images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
 
 
     d_model = build_discriminator()
@@ -199,11 +199,11 @@ if __name__ == "__main__":
     images_dataset = tf_dataset(images_path, batch_size)
 
     for epoch in range(num_epochs):
-        gan.fit(images_dataset, epochs=epoch)
+        gan.fit(images_dataset, epochs=1)
         g_model.save("saved_model/g_model.h5")
         d_model.save("saved_model/d_model.h5")
 
         n_samples = 25
         noise = np.random.normal(size=(n_samples, latent_dim))
         examples = g_model.predict(noise)
-        #save_plot(examples, epoch, int(np.sqrt(n_samples)))
+        save_plot(examples, epoch, int(np.sqrt(n_samples)))
