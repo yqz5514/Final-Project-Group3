@@ -34,12 +34,13 @@ IMAGE_HEIGHT = 64
 IMAGE_WIDTH = 64
 IMAGE_COLOR = 3
 w_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
-images_path = glob(f'/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
+#images_path = glob(f'/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
 
 
 #----------------------------load-data-------------------------------------------------------------------------------------------
 def load_image(image_path):
-    img = tf.io.read_file(images_path)
+
+    img = tf.io.read_file(image_path)
     img = tf.io.decode_png(img)
     img = tf.image.resize_with_crop_or_pad(img, IMG_H, IMG_W)
     img = tf.cast(img, tf.float32)
@@ -250,7 +251,7 @@ if __name__ == "__main__":
     batch_size = 128
     latent_dim = 128
     num_epochs = 100
-    images_path = glob(f'/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
+    images_path = glob("/Data/anime_face/*")
 
     d_model = build_discriminator()
     g_model = build_generator(latent_dim)
@@ -268,7 +269,7 @@ if __name__ == "__main__":
     g_optimizer = tfa.optimizers.Yogi(learning_rate=0.001)
     gan.compile(d_optimizer, g_optimizer, bce_loss_fn)
 
-    images_dataset = tf_dataset(images_path,batch_size)
+    images_dataset = tf_dataset(images_path, batch_size)
 
     for epoch in range(num_epochs):
         gan.fit(images_dataset, epochs=1)

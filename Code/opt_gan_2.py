@@ -259,7 +259,7 @@ IMAGE_HEIGHT = 64
 IMAGE_WIDTH = 64
 IMAGE_COLOR = 3
 
-images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/')
+images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/*')
 # len(images_path)
 
 
