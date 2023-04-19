@@ -17,11 +17,12 @@ w_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
 
 def load_image(image_path):
     img = tf.io.read_file(image_path)
-    img = tf.io.decode_jpeg(img)
+    img = tf.io.decode_png(img)
     img = tf.image.resize_with_crop_or_pad(img, IMG_H, IMG_W)
     img = tf.cast(img, tf.float32)
-    img = (img - 127.5) / 127.5
+    img = (img - 127.5) / 127.5 #????
     return img
+
 
 def tf_dataset(images_path, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices(images_path)
@@ -175,7 +176,9 @@ if __name__ == "__main__":
     batch_size = 128
     latent_dim = 128
     num_epochs = 1000
-    images_path = glob("data/*")
+    #images_path = glob("data/*")
+    images_path = glob('/Users/yaxin/Documents/GitHub/Final-Project-Group3/Data/anime_face/')
+
 
     d_model = build_discriminator()
     g_model = build_generator(latent_dim)
@@ -196,11 +199,11 @@ if __name__ == "__main__":
     images_dataset = tf_dataset(images_path, batch_size)
 
     for epoch in range(num_epochs):
-        gan.fit(images_dataset, epochs=1)
+        gan.fit(images_dataset, epochs=epoch)
         g_model.save("saved_model/g_model.h5")
         d_model.save("saved_model/d_model.h5")
 
         n_samples = 25
         noise = np.random.normal(size=(n_samples, latent_dim))
         examples = g_model.predict(noise)
-        save_plot(examples, epoch, int(np.sqrt(n_samples)))
+        #save_plot(examples, epoch, int(np.sqrt(n_samples)))
