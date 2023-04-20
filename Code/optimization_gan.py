@@ -12,8 +12,17 @@ from sklearn.utils import shuffle
 import tensorflow as tf
 from tensorflow.keras.layers import *
 
-import random
+#--------------------------improvment----------------------------------------------------------------------------------------
 
+# improvment:
+# for generator:
+# 1. change activation to ReLU
+# for discriminator:
+# 1. add batch normalizaiton after each Con2D layers (make sure drop out after each Con2D layers as well)
+# 2. add Gaussian noise to the output of each layer of the discriminator
+# ( for test, I only add one layer of noise in discriminator, we can add more after this could run)
+# for optimizer:
+# 1. use Yogi instead of Adman
 #----------------------------universal-variable-------------------------------------------------------------------------------------------
 # SEED = 42
 # #os.environ['PYTHONHASHSEED'] = str(SEED)
@@ -58,9 +67,7 @@ def tf_dataset(images_path, batch_size):
 #----------------------------generator-------------------------------------------------------------------------------------------
 
 # Builds the generator.
-# Improvement 1: Added more Convolutional Layers, 4 in total
-# Improvement 2: Replaced sigmoid with Tanh.
-# Improvement 3: Added Dropout and batchnormlization for each layer
+
 def build_generator(latent_dim):
     # # global IMAGE_HEIGHT, IMAGE_WIDTH
     generator = keras.models.Sequential()
@@ -93,19 +100,19 @@ def build_generator(latent_dim):
     generator.add(keras.layers.BatchNormalization())
     #generator.add(keras.layers.LeakyReLU())
     generator.add(keras.layers.ReLU())
-    generator.add(keras.layers.Dropout(rate=0.3))
+    #generator.add(keras.layers.Dropout(rate=0.3))
 
     generator.add(keras.layers.Conv2DTranspose(filters=64, kernel_size=5, strides=1, use_bias=False, padding='same'))
     generator.add(keras.layers.BatchNormalization())
     # generator.add(keras.layers.LeakyReLU())
     generator.add(keras.layers.ReLU())
-    generator.add(keras.layers.Dropout(rate=0.3))
+    #generator.add(keras.layers.Dropout(rate=0.3))
 
     generator.add(keras.layers.Conv2DTranspose(filters=128, kernel_size=5, strides=2, use_bias=False, padding='same'))
     generator.add(keras.layers.BatchNormalization())
     #generator.add(keras.layers.LeakyReLU())
     generator.add(keras.layers.ReLU())
-    generator.add(keras.layers.Dropout(rate=0.3))
+    #generator.add(keras.layers.Dropout(rate=0.3))
 
     generator.add(keras.layers.Conv2DTranspose(filters=1, kernel_size=5, strides=2, padding='same',activation='tanh'))
     #generator.add(keras.tanh())
@@ -119,12 +126,13 @@ def build_generator(latent_dim):
 def build_discriminator():
     discriminator = keras.models.Sequential()
 
-    discriminator.add(keras.layers.GaussianNoise(stddev=0.2))
+    # discriminator.add(keras.layers.GaussianNoise(stddev=0.2))
     discriminator.add(keras.layers.Conv2D(filters=64, kernel_size=5, strides=2, padding='same', use_bias=False,
                                           input_shape=(64, 64, 3)))
     discriminator.add(keras.layers.BatchNormalization())
     discriminator.add(keras.layers.LeakyReLU())
     discriminator.add(keras.layers.Dropout(rate=0.3))
+    discriminator.add(keras.layers.GaussianNoise(stddev=0.2))
 
     discriminator.add(keras.layers.Conv2D(filters=128, kernel_size=5, strides=2, padding='same', use_bias=False))
     discriminator.add(keras.layers.BatchNormalization())
