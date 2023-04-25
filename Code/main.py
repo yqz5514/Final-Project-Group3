@@ -231,7 +231,7 @@ videowriter = VideoWriter()
 
 
 class GAN(tf.keras.models.Model):
-  def __init__(self, discriminator=None, generator=None, latent_dim=64):
+  def __init__(self, discriminator=None, generator=None, latent_dim=128):
       super(GAN, self).__init__()
       self.weight_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
       self.loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0.1)
@@ -296,6 +296,7 @@ class GAN(tf.keras.models.Model):
       x = self.deconv_layer(x,
                       num_filters=f[i] * filters,
                       kernel_size=5,
+                      # kernel_size=(i*2)+1,
                       strides=2,
                       batch_norm=True)
       
@@ -326,6 +327,7 @@ class GAN(tf.keras.models.Model):
       x = self.conv_layer(x,
                     num_filters=f[i] * filters,
                     kernel_size=5,
+                    # kernel_size=(i*2)+1,
                     strides=2)
       
       x = tf.keras.layers.Flatten()(x)
