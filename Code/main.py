@@ -284,7 +284,7 @@ class GAN(tf.keras.models.Model):
         global IMAGE_HEIGHT, IMAGE_WIDTH
 
         f = [2 ** i for i in range(5)][::-1]
-        filters = 32
+        filters = 64
         output_strides = 16
         h_output = IMAGE_HEIGHT // output_strides
         w_output = IMAGE_WIDTH // output_strides
@@ -318,7 +318,7 @@ class GAN(tf.keras.models.Model):
         global IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_COLOR
 
         f = [2 ** i for i in range(4)]
-        filters = 64
+        filters = 128
         output_strides = 16
         h_output = IMAGE_HEIGHT // output_strides
         w_output = IMAGE_WIDTH // output_strides
