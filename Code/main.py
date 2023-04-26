@@ -231,165 +231,164 @@ videowriter = VideoWriter()
 
 
 class GAN(tf.keras.models.Model):
-  def __init__(self, discriminator=None, generator=None, latent_dim=128):
-      super(GAN, self).__init__()
-      self.weight_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
-      self.loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0.1)
-      self.d_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
-      self.g_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
-      self.latent_dim = latent_dim
+    def __init__(self, discriminator=None, generator=None, latent_dim=128):
+        super(GAN, self).__init__()
+        self.weight_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
+        self.loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0.1)
+        self.d_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
+        self.g_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
+        self.latent_dim = latent_dim
 
-      self.d1_loss_lost_for_epoch = []
-      self.d2_loss_lost_for_epoch = []
-      self.g_loss_lost_for_epoch = []
-      
-      if discriminator == None: self.discriminator = self.build_discriminator()
-      else: self.discriminator = discriminator
-      
-      if generator == None: self.generator = self.build_generator(self.latent_dim)
-      else: self.generator = generator
+        self.d1_loss_lost_for_epoch = []
+        self.d2_loss_lost_for_epoch = []
+        self.g_loss_lost_for_epoch = []
 
-  def deconv_layer(self, inputs, num_filters, kernel_size, strides, batch_norm=True):
-    x = tf.keras.layers.Conv2DTranspose(filters=num_filters, 
-                                        kernel_size=kernel_size, 
-                                        kernel_initializer=self.weight_init,
-                                        padding="same",
-                                        strides=strides,
-                                        use_bias=False)(inputs)
+        if discriminator == None:
+            self.discriminator = self.build_discriminator()
+        else:
+            self.discriminator = discriminator
 
-    if batch_norm:
-      x = tf.keras.layers.BatchNormalization()(x)
-      x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
+        if generator == None:
+            self.generator = self.build_generator(self.latent_dim)
+        else:
+            self.generator = generator
 
-    return x
+    def deconv_layer(self, inputs, num_filters, kernel_size, strides, batch_norm=True):
+        x = tf.keras.layers.Conv2DTranspose(filters=num_filters,
+                                            kernel_size=kernel_size,
+                                            kernel_initializer=self.weight_init,
+                                            padding="same",
+                                            strides=strides,
+                                            use_bias=False)(inputs)
 
-  def conv_layer(self, inputs, num_filters, kernel_size, padding="same", strides=2, activation=True):
-    x = tf.keras.layers.Conv2D(filters=num_filters, 
-                                kernel_size=kernel_size, 
-                                kernel_initializer=self.weight_init,
-                                padding=padding,
-                                strides=strides)(inputs)
+        if batch_norm:
+            x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
 
-    if activation:
-      x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
-      x = tf.keras.layers.Dropout(0.3)(x)
+        return x
 
-    return x
+    def conv_layer(self, inputs, num_filters, kernel_size, padding="same", strides=2, activation=True):
+        x = tf.keras.layers.Conv2D(filters=num_filters,
+                                   kernel_size=kernel_size,
+                                   kernel_initializer=self.weight_init,
+                                   padding=padding,
+                                   strides=strides)(inputs)
 
-  def build_generator(self, LATENT_DIM):
-    global IMAGE_HEIGHT, IMAGE_WIDTH
-    
-    f = [2**i for i in range(5)][::-1]
-    filters = 64
-    output_strides = 16
-    h_output = IMAGE_HEIGHT // output_strides
-    w_output = IMAGE_WIDTH // output_strides
+        if activation:
+            x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+            x = tf.keras.layers.Dropout(0.3)(x)
 
-    noise = tf.keras.layers.Input(shape=(LATENT_DIM,), name="gen_noise_input")
+        return x
 
-    x = tf.keras.layers.Dense(f[0] * filters * h_output * w_output, use_bias=False)(noise)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
-    x = tf.keras.layers.Reshape((h_output, w_output, f[0] * filters))(x)
+    def build_generator(self, LATENT_DIM):
+        global IMAGE_HEIGHT, IMAGE_WIDTH
 
-    for i in range(1, 5):
-      x = self.deconv_layer(x,
-                      num_filters=f[i] * filters,
-                      kernel_size=5,
-                      # kernel_size=(i*2)+1,
-                      strides=2,
-                      batch_norm=True)
-      
-    
-    x = self.conv_layer(x,
-                  num_filters=3,
-                  kernel_size=5,
-                  strides=1,
-                  activation=False)
+        f = [2 ** i for i in range(5)][::-1]
+        filters = 32
+        output_strides = 16
+        h_output = IMAGE_HEIGHT // output_strides
+        w_output = IMAGE_WIDTH // output_strides
 
-    fake_output = tf.keras.layers.Activation("tanh")(x)
+        noise = tf.keras.layers.Input(shape=(LATENT_DIM,), name="gen_noise_input")
 
-    return tf.keras.models.Model(noise, fake_output, name="generator")
+        x = tf.keras.layers.Dense(f[0] * filters * h_output * w_output, use_bias=False)(noise)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+        x = tf.keras.layers.Reshape((h_output, w_output, f[0] * filters))(x)
 
-  def build_discriminator(self):
-    global IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_COLOR
-    
-    f = [2**i for i in range(4)]
-    filters = 128
-    output_strides = 16
-    h_output = IMAGE_HEIGHT // output_strides
-    w_output = IMAGE_WIDTH // output_strides
+        for i in range(1, 5):
+            x = self.deconv_layer(x,
+                                  num_filters=f[i] * filters,
+                                  kernel_size=5,
+                                  strides=2,
+                                  batch_norm=True)
 
-    image_input = tf.keras.layers.Input(shape=(IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_COLOR), name="Images")
-    x = image_input
+        x = self.conv_layer(x,
+                            num_filters=3,
+                            kernel_size=5,
+                            strides=1,
+                            activation=False)
 
-    for i in range(0, 4):
-      x = self.conv_layer(x,
-                    num_filters=f[i] * filters,
-                    kernel_size=5,
-                    # kernel_size=(i*2)+1,
-                    strides=2)
-      
-      x = tf.keras.layers.Flatten()(x)
-      x = tf.keras.layers.Dense(1)(x)
+        fake_output = tf.keras.layers.Activation("tanh")(x)
 
-      return tf.keras.models.Model(image_input, x, name="discriminator")
+        return tf.keras.models.Model(noise, fake_output, name="generator")
 
-  def reset_epoch_loss(self):
-    self.d1_loss_lost_for_epoch = []
-    self.d2_loss_lost_for_epoch = []
-    self.g_loss_lost_for_epoch = []
+    def build_discriminator(self):
+        global IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_COLOR
 
-  
-  def compile(self, d_optimizer, g_optimizer, loss_fn):
-      super(GAN, self).compile(run_eagerly=True)
-      self.d_optimizer = d_optimizer
-      self.g_optimizer = g_optimizer
-      self.loss_fn = loss_fn
-       
-  def train_step(self, real_images):
-      batch_size = tf.shape(real_images)[0]
+        f = [2 ** i for i in range(4)]
+        filters = 64
+        output_strides = 16
+        h_output = IMAGE_HEIGHT // output_strides
+        w_output = IMAGE_WIDTH // output_strides
 
-      for _ in range(2):
-          ## Train the discriminator
-          random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
-          generated_images = self.generator(random_latent_vectors)
-          generated_labels = tf.zeros((batch_size, 1))
+        image_input = tf.keras.layers.Input(shape=(IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_COLOR), name="Images")
+        x = image_input
 
-          with tf.GradientTape() as ftape:
-              predictions = self.discriminator(generated_images)
-              d1_loss = self.loss_fn(generated_labels, predictions)
-          grads = ftape.gradient(d1_loss, self.discriminator.trainable_weights)
-          self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+        for i in range(0, 4):
+            x = self.conv_layer(x,
+                                num_filters=f[i] * filters,
+                                kernel_size=5,
+                                strides=2)
 
-          ## Train the discriminator
-          labels = tf.ones((batch_size, 1))
+            x = tf.keras.layers.Flatten()(x)
+            x = tf.keras.layers.Dense(1)(x)
 
-          with tf.GradientTape() as rtape:
-              predictions = self.discriminator(real_images)
-              d2_loss = self.loss_fn(labels, predictions)
-          grads = rtape.gradient(d2_loss, self.discriminator.trainable_weights)
-          self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+            return tf.keras.models.Model(image_input, x, name="discriminator")
 
-      ## Train the generator
-      random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
-      misleading_labels = tf.ones((batch_size, 1))
+    def reset_epoch_loss(self):
+        self.d1_loss_lost_for_epoch = []
+        self.d2_loss_lost_for_epoch = []
+        self.g_loss_lost_for_epoch = []
 
-      with tf.GradientTape() as gtape:
-          predictions = self.discriminator(self.generator(random_latent_vectors))
-          g_loss = self.loss_fn(misleading_labels, predictions)
-      grads = gtape.gradient(g_loss, self.generator.trainable_weights)
-      self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
+    def compile(self, d_optimizer, g_optimizer, loss_fn):
+        super(GAN, self).compile(run_eagerly=True)
+        self.d_optimizer = d_optimizer
+        self.g_optimizer = g_optimizer
+        self.loss_fn = loss_fn
 
+    def train_step(self, real_images):
+        batch_size = tf.shape(real_images)[0]
 
-      return {"d1_loss": d1_loss, "d2_loss": d2_loss, "g_loss": g_loss}
+        for _ in range(2):
+            ## Train the discriminator
+            random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
+            generated_images = self.generator(random_latent_vectors)
+            generated_labels = tf.zeros((batch_size, 1))
+
+            with tf.GradientTape() as ftape:
+                predictions = self.discriminator(generated_images)
+                d1_loss = self.loss_fn(generated_labels, predictions)
+            grads = ftape.gradient(d1_loss, self.discriminator.trainable_weights)
+            self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+
+            ## Train the discriminator
+            labels = tf.ones((batch_size, 1))
+
+            with tf.GradientTape() as rtape:
+                predictions = self.discriminator(real_images)
+                d2_loss = self.loss_fn(labels, predictions)
+            grads = rtape.gradient(d2_loss, self.discriminator.trainable_weights)
+            self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+
+        ## Train the generator
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
+        misleading_labels = tf.ones((batch_size, 1))
+
+        with tf.GradientTape() as gtape:
+            predictions = self.discriminator(self.generator(random_latent_vectors))
+            g_loss = self.loss_fn(misleading_labels, predictions)
+        grads = gtape.gradient(g_loss, self.generator.trainable_weights)
+        self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
+
+        return {"d1_loss": d1_loss, "d2_loss": d2_loss, "g_loss": g_loss}
 
 
 IMAGE_HEIGHT = 64
 IMAGE_WIDTH = 64
 IMAGE_COLOR = 3
 
-images_path = glob("/content/data/*")
+images_path = glob("data/*")
 
 dataset = utils.get_dataset(images_path)
 
