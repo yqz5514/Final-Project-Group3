@@ -263,7 +263,7 @@ class GAN(tf.keras.models.Model):
 
         if batch_norm:
             x = tf.keras.layers.BatchNormalization()(x)
-            x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+            x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
 
         return x
 
@@ -275,7 +275,7 @@ class GAN(tf.keras.models.Model):
                                    strides=strides)(inputs)
 
         if activation:
-            x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+            x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
             x = tf.keras.layers.Dropout(0.3)(x)
 
         return x
@@ -293,13 +293,14 @@ class GAN(tf.keras.models.Model):
 
         x = tf.keras.layers.Dense(f[0] * filters * h_output * w_output, use_bias=False)(noise)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+        x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
         x = tf.keras.layers.Reshape((h_output, w_output, f[0] * filters))(x)
 
         for i in range(1, 5):
             x = self.deconv_layer(x,
                                   num_filters=f[i] * filters,
                                   kernel_size=5,
+                                  # kernel_size=(f[i]*2 + 1),
                                   strides=2,
                                   batch_norm=True)
 
@@ -329,6 +330,7 @@ class GAN(tf.keras.models.Model):
             x = self.conv_layer(x,
                                 num_filters=f[i] * filters,
                                 kernel_size=5,
+                                # kernel_size=(f[i]*2 + 1),
                                 strides=2)
 
             x = tf.keras.layers.Flatten()(x)
